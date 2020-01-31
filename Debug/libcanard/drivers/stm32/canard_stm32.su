@@ -1,0 +1,10 @@
+canard_stm32.c:28:13:isFramePriorityHigher	40	static
+canard_stm32.c:69:17:convertFrameIDCanardToRegister	24	static
+canard_stm32.c:91:17:convertFrameIDRegisterToCanard	24	static
+canard_stm32.c:118:13:waitMSRINAKBitStateChange	24	static
+canard_stm32.c:148:13:processErrorStatus	16	static
+canard_stm32.c:170:9:canardSTM32Init	24	static
+canard_stm32.c:283:9:canardSTM32Transmit	40	static
+canard_stm32.c:389:9:canardSTM32Receive	40	static
+canard_stm32.c:451:9:canardSTM32ConfigureAcceptanceFilters	40	static
+canard_stm32.c:567:18:canardSTM32GetStats	16	static
