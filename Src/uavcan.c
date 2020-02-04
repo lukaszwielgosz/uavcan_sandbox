@@ -5,7 +5,7 @@
 
 #include "main.h"
 
-#define CANARD_SPIN_PERIOD   500
+#define CANARD_SPIN_PERIOD   100
 #define PUBLISHER_PERIOD_mS     100
 
 static CanardInstance g_canard;                //The library instance
@@ -132,7 +132,7 @@ void spinCanard(void)
     if(HAL_GetTick() < spin_time + CANARD_SPIN_PERIOD) return;  // rate limiting
     spin_time = HAL_GetTick();
     //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    //HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 
     uint8_t buffer[UAVCAN_NODE_STATUS_MESSAGE_SIZE];
     static uint8_t transfer_id = 0;                           // This variable MUST BE STATIC; refer to the libcanard documentation for the background
@@ -158,18 +158,21 @@ void publishCanard(void)
     static int step = 0;
     if(HAL_GetTick() < publish_time + PUBLISHER_PERIOD_mS) {return;} // rate limiting
     publish_time = HAL_GetTick();
+    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+
 
     /*
-
     uint8_t buffer[UAVCAN_PROTOCOL_DEBUG_KEYVALUE_MESSAGE_SIZE];
     memset(buffer,0x00,UAVCAN_PROTOCOL_DEBUG_KEYVALUE_MESSAGE_SIZE);
     step++;
-    if(step == 256)
+    if(step == 2560)
     {
         step = 0;
     }
+    //float val = step;
 
-    float val = sine_wave[step];
+
+
     static uint8_t transfer_id = 0;
     canardEncodeScalar(buffer, 0, 32, &val);
     memcpy(&buffer[4], "sin", 3);
@@ -249,7 +252,14 @@ void makeRawAirDatadMessage(uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_
 	 * uint16_t canardConvertNativeFloatToFloat16(float value);
 	 * float canardConvertFloat16ToNativeFloat(uint16_t value);
 	 */
+	static int step = 0;
+	step++;
+	if(step == 256)
+	{
+		step = 0;
+	}
 
+	float val = sine_wave[step];
 
 
 	 uint8_t flags = 1;
@@ -259,8 +269,8 @@ void makeRawAirDatadMessage(uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_
 	 //uint16_t static_pressure = canardConvertNativeFloatToFloat16(4.1);
 	 //uint16_t differential_pressure = canardConvertNativeFloatToFloat16(0.0);
 	 float static_pressure = 101300.0;
-	 float differential_pressure = 1000.0;
-	 //float differential_pressure = 0.0;
+	 //float differential_pressure = 1000.0;
+	 float differential_pressure = val*10.0;
 
 
 	 uint16_t static_pressure_sensor_temperature = 330;
