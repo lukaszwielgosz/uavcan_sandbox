@@ -26,6 +26,8 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "uavcan.h"
+#include "MS4525DO.h"
+#include "math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,30 +49,21 @@ CAN_HandleTypeDef hcan;
 
 I2C_HandleTypeDef hi2c1;
 
-UART_HandleTypeDef huart1;
-
 /* Definitions for Task1 */
 osThreadId_t Task1Handle;
 const osThreadAttr_t Task1_attributes = {
   .name = "Task1",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128
-};
-/* Definitions for Task2 */
-osThreadId_t Task2Handle;
-const osThreadAttr_t Task2_attributes = {
-  .name = "Task2",
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityHigh,
   .stack_size = 512
 };
-/* Definitions for uartMutex */
-osMutexId_t uartMutexHandle;
-const osMutexAttr_t uartMutex_attributes = {
-  .name = "uartMutex"
+/* Definitions for measurementMutex */
+osMutexId_t measurementMutexHandle;
+const osMutexAttr_t measurementMutex_attributes = {
+  .name = "measurementMutex"
 };
 /* USER CODE BEGIN PV */
-uint8_t txData[40];
-uint16_t messageLength = 0;
+float press;
+float temp;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -78,9 +71,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_USART1_UART_Init(void);
 void StartTask01(void *argument);
-void StartTask02(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -122,15 +113,14 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN_Init();
   MX_I2C1_Init();
-  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   uavcanInit();
   /* USER CODE END 2 */
   /* Init scheduler */
   osKernelInitialize();
   /* Create the mutex(es) */
-  /* creation of uartMutex */
-  uartMutexHandle = osMutexNew(&uartMutex_attributes);
+  /* creation of measurementMutex */
+  measurementMutexHandle = osMutexNew(&measurementMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -151,9 +141,6 @@ int main(void)
   /* Create the thread(s) */
   /* creation of Task1 */
   Task1Handle = osThreadNew(StartTask01, NULL, &Task1_attributes);
-
-  /* creation of Task2 */
-  Task2Handle = osThreadNew(StartTask02, NULL, &Task2_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -283,39 +270,6 @@ static void MX_I2C1_Init(void)
 }
 
 /**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART1_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -356,50 +310,30 @@ void StartTask01(void *argument)
 {
   /* USER CODE BEGIN 5 */
 
-
+  static uint32_t publish_time = 0;
 
   /* Infinite loop */
   for(;;)
   {
-	//messageLength = sprintf(txData, "Hello from task01\r\n");
-	//CDC_Transmit_FS(txData, messageLength);
-	//HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-	//showRcpwmonUart();
-	//printf("dupa");
-	//publishAirspeed();
-	osDelay(500);
+	  if(HAL_GetTick() < publish_time + 50) {
 
+	  	} // rate limiting
+	  	else{
+	  		publish_time = HAL_GetTick();
+	  		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+	  		measure_ms4525do(&hi2c1, &press, &temp);
+	  		publishAirspeed(fabs(press), temp);
 
+	  	}
+
+	  	//publishAirspeed(40.1, 324.1);
+	  	sendCanard();
+	  	receiveCanard();
+	  	spinCanard();
+	  	//publishCanard();
 
   }
   /* USER CODE END 5 */ 
-}
-
-/* USER CODE BEGIN Header_StartTask02 */
-/**
-* @brief Function implementing the Task2 thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartTask02 */
-void StartTask02(void *argument)
-{
-  /* USER CODE BEGIN StartTask02 */
-
-  /* Infinite loop */
-  for(;;)
-  {
-	sendCanard();
-	receiveCanard();
-	spinCanard();
-
-	publishCanard();
-
-
-	//osDelay(100);
-
-  }
-  /* USER CODE END StartTask02 */
 }
 
 /**

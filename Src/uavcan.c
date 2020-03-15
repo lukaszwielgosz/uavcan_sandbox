@@ -6,7 +6,7 @@
 #include "main.h"
 
 #define CANARD_SPIN_PERIOD   100
-#define PUBLISHER_PERIOD_mS     100
+#define PUBLISHER_PERIOD_mS     50
 
 static CanardInstance g_canard;                //The library instance
 static uint8_t g_canard_memory_pool[1024];     //Arena for memory allocation, used by the library
@@ -196,7 +196,7 @@ void publishCanard(void)
                     &buffer[0],
                     7);
 	*/
-    publishAirspeed();
+    //publishAirspeed();
 
 }
 
@@ -239,7 +239,7 @@ uint16_t convertFrom16To32(uint16_t dataFirst, uint16_t dataSecond) {
 
 
 
-void makeRawAirDatadMessage(uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_SIZE])
+void makeRawAirDatadMessage(uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_SIZE], float diff_press, float temp)
 {
 	/*
 	 * Full name: uavcan.equipment.air_data.RawAirData
@@ -252,15 +252,6 @@ void makeRawAirDatadMessage(uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_
 	 * uint16_t canardConvertNativeFloatToFloat16(float value);
 	 * float canardConvertFloat16ToNativeFloat(uint16_t value);
 	 */
-	static int step = 0;
-	step++;
-	if(step == 256)
-	{
-		step = 0;
-	}
-
-	float val = sine_wave[step];
-
 
 	 uint8_t flags = 1;
 	 uint16_t pad= 0;
@@ -270,12 +261,12 @@ void makeRawAirDatadMessage(uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_
 	 //uint16_t differential_pressure = canardConvertNativeFloatToFloat16(0.0);
 	 float static_pressure = 101300.0;
 	 //float differential_pressure = 1000.0;
-	 float differential_pressure = val*10.0;
+	 float differential_pressure = diff_press;
 
 
-	 uint16_t static_pressure_sensor_temperature = 330;
-	 uint16_t differential_pressure_sensor_temperature = 340;
-	 uint16_t static_air_temperature = canardConvertNativeFloatToFloat16(288.0);
+	 uint16_t static_pressure_sensor_temperature = 0.0;
+	 uint16_t differential_pressure_sensor_temperature = 0;
+	 uint16_t static_air_temperature = canardConvertNativeFloatToFloat16(temp+273.15);
 	 uint16_t pitot_temperature = 10;
 	 //uint16_t padding[16];
 
@@ -292,7 +283,7 @@ void makeRawAirDatadMessage(uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_
 
 }
 
-void publishAirspeed(void)
+void publishAirspeed(float diff_press, float temp)
 {
 /*
 	uint8_t buff[UAVCAN_EQUIPMENT_AIR_DATA_INDICATED_MESSAGE_SIZE];
@@ -306,8 +297,17 @@ void publishAirspeed(void)
 
 */
 
+	/*
+	static uint32_t publish_time = 0;
+	static int step = 0;
+	if(HAL_GetTick() < publish_time + PUBLISHER_PERIOD_mS) {return;} // rate limiting
+	publish_time = HAL_GetTick();
+	*/
+
+	//HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+
 	uint8_t buff[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_SIZE];
-	makeRawAirDatadMessage(buff);
+	makeRawAirDatadMessage(buff, diff_press, temp);
 	static uint8_t transfer_id;  // Note that the transfer ID variable MUST BE STATIC (or heap-allocated)!
 	const int16_t airspeed_result = canardBroadcast(&g_canard, UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_SIGNATURE, UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_ID, &transfer_id, CANARD_TRANSFER_PRIORITY_HIGHEST, buff, UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_SIZE);
 	if(airspeed_result <= 0)

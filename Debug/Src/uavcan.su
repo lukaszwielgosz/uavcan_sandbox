@@ -9,8 +9,8 @@ uavcan.c:129:6:spinCanard	48	static
 uavcan.c:155:6:publishCanard	8	static
 uavcan.c:203:6:makeIndicatedAirspeedMessage	32	static
 uavcan.c:230:10:convertFrom16To32	24	static
-uavcan.c:242:6:makeRawAirDatadMessage	40	static
-uavcan.c:295:6:publishAirspeed	88	static
+uavcan.c:242:6:makeRawAirDatadMessage	56	static
+uavcan.c:286:6:publishAirspeed	96	static
 uavcan.c:324:6:makeNodeStatusMessage	24	static
 uavcan.c:335:10:makeNodeInfoMessage	24	static
 uavcan.c:352:6:readUniqueID	24	static

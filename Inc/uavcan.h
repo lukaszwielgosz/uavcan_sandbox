@@ -9,7 +9,7 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 #define APP_VERSION_MAJOR                                           99
 #define APP_VERSION_MINOR                                           99
-#define APP_NODE_NAME                                               "skyyu.node.demo"
+#define APP_NODE_NAME                                               "uavcan.airspeed.v0"
 #define GIT_HASH                                                    0xBADC0FFE
 
 #define UAVCAN_GET_NODE_INFO_DATA_TYPE_SIGNATURE                    0xee468a8121c46a9e
@@ -72,7 +72,7 @@ void spinCanard(void);
 
 void publishCanard(void);
 
-void publishAirspeed(void);
+void publishAirspeed(float diff_press, float temp);
 
 void rawcmdHandleCanard(CanardRxTransfer* transfer);
 
